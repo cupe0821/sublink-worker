@@ -21,15 +21,25 @@ case "$CAT" in
 esac
 
 LOW="$(echo "$PKG" | tr '[:upper:]' '[:lower:]')"
+
+# Explicit, conservative package heuristics for common Android/Chinese apps.
 case "$LOW" in
-  *youtube.music*|*music*|*spotify*|*podcast*|*soundcloud*|*qqmusic*|*cloudmusic*|*kugou*|*kuwo*|*audio*)
-    echo "audio|package-heuristic" ;;
-  *tmgp*|*mihoyo*|*hoyoverse*|*netease*game*|*supercell*|*riotgames*|*epicgames*|*unity*|*game*)
-    echo "game|package-heuristic" ;;
-  *bilibili*|*iqiyi*|*qqlive*|*youku*|*netflix*|*tiktok*|*douyin*|*primevideo*|*disney*|*hulu*|*youtube*|*video*)
-    echo "video|package-heuristic" ;;
-  *tencent.mm*|*wechat*|*weixin*|*telegram*|*whatsapp*|*discord*|*messenger*|*facebook.orca*|*tencent.mobileqq*|*tencent.tim*|*signal*|*social*|*chat*)
-    echo "chat|package-heuristic" ;;
-  *)
-    echo "balanced|conservative-default" ;;
+  # Audio / music / podcasts
+  *youtube.music*|*music*|*spotify*|*podcast*|*soundcloud*|*qqmusic*|*cloudmusic*|*netease.cloudmusic*|*kugou*|*kuwo*|*audio*)
+    echo "audio|package-heuristic"; exit 0 ;;
+
+  # Games
+  *tmgp*|*mihoyo*|*hoyoverse*|*hypergryph*|*kurogame*|*papegames*|*lilithgame*|*netease*game*|*supercell*|*riotgames*|*epicgames*|*unity*|*game*)
+    echo "game|package-heuristic"; exit 0 ;;
+
+  # Video / short-video / streaming
+  *bilibili*|*iqiyi*|*qqlive*|*youku*|*netflix*|*tiktok*|*douyin*|*aweme*|*kuaishou*|*primevideo*|*disney*|*hulu*|*youtube*|*video*)
+    echo "video|package-heuristic"; exit 0 ;;
+
+  # Chat / IM / collaboration
+  *tencent.mm*|*wechat*|*weixin*|*telegram*|*whatsapp*|*discord*|*messenger*|*facebook.orca*|*tencent.mobileqq*|*tencent.tim*|*signal*|*alibaba.android.rimet*|*dingtalk*|*lark*|*feishu*|*wxwork*|*wework*|*social*|*chat*)
+    echo "chat|package-heuristic"; exit 0 ;;
 esac
+
+# Do not auto-assign power-save to a foreground app. Unknown apps stay balanced.
+echo "balanced|conservative-default"
