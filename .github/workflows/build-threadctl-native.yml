@@ -45,15 +45,21 @@ jobs:
           cargo build --locked --release --target aarch64-linux-android -p threadctl
           "$TOOLCHAIN/llvm-strip" target/aarch64-linux-android/release/threadctl || true
           file target/aarch64-linux-android/release/threadctl
-          ./target/aarch64-linux-android/release/threadctl -v || true
 
-      - name: Store binary and provenance on build branch
+      - name: Store binary, provenance, and transport chunks
         shell: bash
         run: |
           set -euxo pipefail
-          mkdir -p threadctl-build-output
+          rm -rf threadctl-build-output
+          mkdir -p threadctl-build-output/chunks
           cp threadctl-rs/target/aarch64-linux-android/release/threadctl threadctl-build-output/threadctl
           sha256sum threadctl-build-output/threadctl > threadctl-build-output/threadctl.sha256
+          stat -c '%s' threadctl-build-output/threadctl > threadctl-build-output/threadctl.size
+          gzip -9 -c threadctl-build-output/threadctl > threadctl-build-output/threadctl.gz
+          sha256sum threadctl-build-output/threadctl.gz > threadctl-build-output/threadctl.gz.sha256
+          stat -c '%s' threadctl-build-output/threadctl.gz > threadctl-build-output/threadctl.gz.size
+          base64 -w 0 threadctl-build-output/threadctl.gz | split -b 30000 -d -a 3 - threadctl-build-output/chunks/part-
+          ls -1 threadctl-build-output/chunks > threadctl-build-output/chunks.list
           cat > threadctl-build-output/PROVENANCE.txt <<'EOF'
           Upstream: https://github.com/StarfallSeas/threadctl-rs
           Upstream commit: 60f223d156d630082a803a165ac9ac898f43f8b9
@@ -66,5 +72,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add threadctl-build-output
-          git commit -m "[threadctl-build-output] Android ARM64 original daemon"
+          git commit -m "[threadctl-build-output] Android ARM64 original daemon + chunks"
           git push origin HEAD:build-threadctl-native-20260808
