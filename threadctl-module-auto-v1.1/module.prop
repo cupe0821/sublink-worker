@@ -1,0 +1,6 @@
+id=threadctl_rs_auto_webui
+name=ThreadCtl-rs Auto WebUI (Original Native)
+version=1.1.0
+versionCode=10100
+author=StarfallSeas + Auto/WebUI wrapper
+description=Unmodified upstream threadctl-rs Android ARM64 daemon with automatic foreground-app discovery/profile classification, persistent original KDL generation, optional overrides and advanced KDL editor.
