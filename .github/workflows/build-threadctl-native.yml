@@ -1,0 +1,70 @@
+name: build-threadctl-native
+
+on:
+  push:
+    branches:
+      - build-threadctl-native-20260808
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: ${{ !contains(github.event.head_commit.message, '[threadctl-build-output]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout upstream threadctl-rs
+        uses: actions/checkout@v4
+        with:
+          repository: StarfallSeas/threadctl-rs
+          ref: 60f223d156d630082a803a165ac9ac898f43f8b9
+          path: threadctl-rs
+
+      - name: Install Android Rust target
+        run: rustup target add aarch64-linux-android
+
+      - name: Locate Android NDK and build original daemon
+        shell: bash
+        run: |
+          set -euxo pipefail
+          NDK_ROOT="${ANDROID_NDK_LATEST_HOME:-}"
+          if [ -z "$NDK_ROOT" ] || [ ! -d "$NDK_ROOT" ]; then
+            NDK_ROOT="$(find "$ANDROID_SDK_ROOT/ndk" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          fi
+          test -d "$NDK_ROOT"
+          TOOLCHAIN="$NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          LINKER="$TOOLCHAIN/aarch64-linux-android26-clang"
+          test -x "$LINKER"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$LINKER"
+          cd threadctl-rs
+          cargo build --locked --release --target aarch64-linux-android -p threadctl
+          "$TOOLCHAIN/llvm-strip" target/aarch64-linux-android/release/threadctl || true
+          file target/aarch64-linux-android/release/threadctl
+          ./target/aarch64-linux-android/release/threadctl -v || true
+
+      - name: Store binary and provenance on build branch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p threadctl-build-output
+          cp threadctl-rs/target/aarch64-linux-android/release/threadctl threadctl-build-output/threadctl
+          sha256sum threadctl-build-output/threadctl > threadctl-build-output/threadctl.sha256
+          cat > threadctl-build-output/PROVENANCE.txt <<'EOF'
+          Upstream: https://github.com/StarfallSeas/threadctl-rs
+          Upstream commit: 60f223d156d630082a803a165ac9ac898f43f8b9
+          Cargo package: threadctl
+          Target: aarch64-linux-android
+          Android API linker: aarch64-linux-android26-clang
+          Build command: cargo build --locked --release --target aarch64-linux-android -p threadctl
+          Source modifications: none
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add threadctl-build-output
+          git commit -m "[threadctl-build-output] Android ARM64 original daemon"
+          git push origin HEAD:build-threadctl-native-20260808
