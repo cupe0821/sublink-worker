@@ -7,6 +7,10 @@ mkdir -p "$RUN" "$CFG"
 BIN="$MODDIR/bin/threadctl"
 [ -x "$BIN" ] || { echo "fatal: native bin/threadctl missing or not executable" >> "$RUN/threadctl.log"; exit 1; }
 
+# v1.2: repair v1.0-imported records before daemon start so the WebUI/KDL
+# does not remain stuck on legacy balanced values.
+"$MODDIR/scripts/reclassify-legacy.sh" >/dev/null 2>&1
+
 # Do one foreground discovery before starting so the initial KDL normally
 # already contains the app visible at boot (usually the launcher).
 "$MODDIR/scripts/auto-controller.sh" --once >/dev/null 2>&1
