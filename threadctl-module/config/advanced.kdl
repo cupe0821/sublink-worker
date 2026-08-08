@@ -1,0 +1,5 @@
+// Advanced KDL is appended verbatim after the WebUI-managed profile rules.
+// Put any original threadctl-rs KDL here: engine settings, default/thread/thread-type,
+// cpus/cluster, sched/priority, nice, uclamp_min/uclamp_max, etc.
+// Avoid defining the same package both here and in the managed application list.
+
