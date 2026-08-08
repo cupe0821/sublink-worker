@@ -1,0 +1,68 @@
+name: build-threadctl-auto-v1.1
+
+on:
+  push:
+    branches:
+      - build-threadctl-auto-v1.1
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    if: ${{ !contains(github.event.head_commit.message, '[threadctl-auto-output]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+
+      - name: Verify original native daemon
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo '2ffe4dcf675ce7eeb4797349c6a3a63d3fd21b1b258c7ab68c558ee49dce3a89  threadctl-build-output/threadctl' | sha256sum -c -
+          file threadctl-build-output/threadctl | tee /tmp/threadctl-file.txt
+          grep -Eqi 'ELF 64-bit.*(ARM aarch64|aarch64)' /tmp/threadctl-file.txt
+
+      - name: Assemble module
+        shell: bash
+        run: |
+          set -euxo pipefail
+          MOD=threadctl-module-auto-v1.1
+          mkdir -p "$MOD/bin" "$MOD/config" "$MOD/run"
+          cp threadctl-build-output/threadctl "$MOD/bin/threadctl"
+          cp /usr/share/common-licenses/GPL-3 "$MOD/LICENSE-GPL-3.0.txt"
+          chmod 0755 "$MOD/bin/threadctl" "$MOD"/*.sh "$MOD"/scripts/*.sh
+          : > "$MOD/config/auto-apps.tsv"
+          : > "$MOD/config/overrides.tsv"
+          : > "$MOD/config/exclude.txt"
+          : > "$MOD/config/advanced.kdl"
+          echo 1 > "$MOD/config/auto.enabled"
+          for f in "$MOD"/*.sh "$MOD"/scripts/*.sh; do sh -n "$f"; done
+          node --check "$MOD/webroot/app.js"
+          node --check "$MOD/webroot/kernelsu.js"
+
+      - name: Package and verify
+        shell: bash
+        run: |
+          set -euxo pipefail
+          OUT=threadctl-release-auto
+          ZIP="$OUT/ThreadCtl-rs-KernelSU-Auto-WebUI-v1.1.zip"
+          mkdir -p "$OUT"
+          (cd threadctl-module-auto-v1.1 && zip -9 -r "../$ZIP" .)
+          unzip -t "$ZIP"
+          test "$(unzip -p "$ZIP" bin/threadctl | sha256sum | awk '{print $1}')" = '2ffe4dcf675ce7eeb4797349c6a3a63d3fd21b1b258c7ab68c558ee49dce3a89'
+          unzip -l "$ZIP" | grep -q 'webroot/index.html'
+          unzip -l "$ZIP" | grep -q 'scripts/auto-controller.sh'
+          sha256sum "$ZIP" > "$ZIP.sha256"
+          cp threadctl-build-output/threadctl.sha256 "$OUT/native-threadctl.sha256"
+
+      - name: Publish package on build branch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add threadctl-release-auto
+          git commit -m '[threadctl-auto-output] ThreadCtl-rs Auto WebUI v1.1' || exit 0
+          git push origin HEAD:build-threadctl-auto-v1.1
