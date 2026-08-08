@@ -1,0 +1,7 @@
+Upstream: https://github.com/StarfallSeas/threadctl-rs
+Upstream commit: 60f223d156d630082a803a165ac9ac898f43f8b9
+Cargo package: threadctl
+Target: aarch64-linux-android
+Android API linker: aarch64-linux-android26-clang
+Build command: cargo build --locked --release --target aarch64-linux-android -p threadctl
+Source modifications: none
