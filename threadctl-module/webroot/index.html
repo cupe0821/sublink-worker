@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>ThreadCtl-rs</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main class="page">
+  <header class="hero">
+    <div>
+      <div class="brandline"><span class="badge">ORIGINAL NATIVE</span><span class="upstream">StarfallSeas/threadctl-rs</span></div>
+      <h1>ThreadCtl-rs</h1>
+      <p>原版 Rust 调度引擎 · KernelSU WebUI</p>
+    </div>
+    <span id="dot" class="dot"></span>
+  </header>
+
+  <section class="metrics">
+    <div class="metric"><span>Daemon</span><b id="state">读取中…</b></div>
+    <div class="metric"><span>版本</span><b id="version">—</b></div>
+    <div class="metric"><span>已添加</span><b><i id="count">0</i> 个应用</b></div>
+  </section>
+
+  <section class="card">
+    <div class="head">
+      <div><h2>应用策略</h2><p>选择应用后，生成原版 <code>app { profile }</code> KDL 规则。</p></div>
+      <button id="refresh" class="ghost">刷新</button>
+    </div>
+    <div class="searchrow">
+      <input id="search" type="search" placeholder="搜索应用名称或包名">
+      <select id="filter"><option value="all">全部应用</option><option value="configured">已添加</option><option value="unconfigured">未添加</option></select>
+    </div>
+    <div id="loading" class="empty">正在读取应用列表…</div>
+    <div id="apps" class="apps"></div>
+    <div class="sticky-actions">
+      <span id="dirtyApps" class="hint"></span>
+      <button id="saveApps" class="primary">保存应用策略</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="head">
+      <div><h2>原版高级 KDL</h2><p>这里的内容会原样追加到配置中，可使用原仓库支持的全部字段。</p></div>
+      <span class="badge subtle">FULL KDL</span>
+    </div>
+    <textarea id="advanced" spellcheck="false" placeholder='例如：\napp "com.example.game" {\n  default { cluster "big" }\n  thread "RenderThread" { cluster "prime"; sched "fifo"; priority 60 }\n}'></textarea>
+    <p class="hint">建议：某个包如果要完全手动配置，就不要同时在上面的“应用策略”里添加它，避免重复规则。</p>
+    <div class="actions"><button id="reloadAdvanced" class="ghost">重新读取</button><button id="saveAdvanced" class="primary">保存高级 KDL</button></div>
+  </section>
+
+  <details class="card">
+    <summary>运行控制与诊断</summary>
+    <div class="details">
+      <div class="actions"><button id="restart" class="ghost">重启原版 Daemon</button><button id="refreshLog" class="ghost">刷新日志</button><button id="preview" class="ghost">查看合并 KDL</button></div>
+      <pre id="output">日志和配置预览会显示在这里。</pre>
+      <p class="hint">正常保存配置时不需要重启：原版 threadctl-rs 会监视配置并热加载。重启按钮仅用于故障恢复。</p>
+    </div>
+  </details>
+
+  <section class="card profile-help">
+    <h2>内置 Profile</h2>
+    <div class="profile-grid">
+      <div><b>game</b><span>游戏</span></div><div><b>chat</b><span>聊天 / IM</span></div><div><b>video</b><span>视频</span></div>
+      <div><b>launcher</b><span>桌面</span></div><div><b>audio</b><span>音乐 / 音频</span></div><div><b>balanced</b><span>均衡</span></div><div><b>power-save</b><span>省电</span></div>
+    </div>
+  </section>
+</main>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
