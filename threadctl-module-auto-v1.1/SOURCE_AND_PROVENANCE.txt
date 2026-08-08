@@ -1,0 +1,20 @@
+ThreadCtl-rs Auto WebUI v1.1
+
+Native daemon upstream:
+  https://github.com/StarfallSeas/threadctl-rs
+  commit: 60f223d156d630082a803a165ac9ac898f43f8b9
+  license: GPL-3.0
+
+Native daemon build:
+  target: aarch64-linux-android
+  Android linker: aarch64-linux-android26-clang
+  command: cargo build --locked --release --target aarch64-linux-android -p threadctl
+  source modifications: NONE
+  expected stripped binary SHA-256:
+  2ffe4dcf675ce7eeb4797349c6a3a63d3fd21b1b258c7ab68c558ee49dce3a89
+
+Wrapper behavior:
+  The auto controller is outside the Rust daemon. It detects foreground apps,
+  classifies them, and writes ordinary upstream-compatible KDL. It does not
+  replace affinity/cpuset/sched/nice/uclamp/relock/hot-reload implementation;
+  those remain implemented by the original threadctl-rs binary.
