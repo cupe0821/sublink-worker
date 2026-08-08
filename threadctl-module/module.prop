@@ -1,0 +1,7 @@
+id=threadctl_rs_webui
+name=ThreadCtl-rs WebUI (Original Native)
+version=1.0.0
+versionCode=10000
+author=StarfallSeas + WebUI wrapper
+updateJson=
+description=Unmodified upstream threadctl-rs native Android ARM64 daemon packaged for KernelSU, with WebUI app/profile manager and full KDL advanced editor.
