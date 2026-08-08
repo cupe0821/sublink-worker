@@ -57,6 +57,7 @@ jobs:
           test -f threadctl-module/webroot/index.html
           mkdir -p threadctl-module/bin threadctl-release
           cp threadctl-rs/target/aarch64-linux-android/release/threadctl threadctl-module/bin/threadctl
+          cp threadctl-rs/LICENSE threadctl-module/LICENSE.threadctl-rs
           chmod 0755 threadctl-module/bin/threadctl
           sha256sum threadctl-module/bin/threadctl > threadctl-module/THREADCTL.sha256
           cat > threadctl-module/UPSTREAM.txt <<'EOF'
@@ -79,7 +80,7 @@ jobs:
         run: |
           set -euxo pipefail
           unzip -t threadctl-release/ThreadCtl-rs-KernelSU-WebUI-v1.0.zip
-          unzip -l threadctl-release/ThreadCtl-rs-KernelSU-WebUI-v1.0.zip | grep -E 'module.prop|bin/threadctl|webroot/index.html|config/advanced.kdl'
+          unzip -l threadctl-release/ThreadCtl-rs-KernelSU-WebUI-v1.0.zip | grep -E 'module.prop|bin/threadctl|webroot/index.html|config/advanced.kdl|LICENSE.threadctl-rs'
           unzip -p threadctl-release/ThreadCtl-rs-KernelSU-WebUI-v1.0.zip bin/threadctl > /tmp/threadctl
           chmod +x /tmp/threadctl
           file /tmp/threadctl
