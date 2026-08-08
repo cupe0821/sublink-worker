@@ -1,6 +1,7 @@
 #!/system/bin/sh
 MODDIR="$(cd "${0%/*}/.." 2>/dev/null && pwd)"
 CFG="$MODDIR/config"
+RUN="$MODDIR/run"
 AUTO="$CFG/auto-apps.tsv"
 OVR="$CFG/overrides.tsv"
 TAB="$(printf '\t')"
@@ -13,17 +14,24 @@ CHANGED=0
 while IFS="$TAB" read -r PKG PROFILE REASON TS REST; do
   [ -n "$PKG" ] || continue
 
-  # Manual overrides always win and are never rewritten here.
-  OV="$(awk -F '\t' -v p="$PKG" '$1==p {v=$2} END{print v}' "$OVR" 2>/dev/null)"
-
   case "$REASON" in
-    migrated-v1.0|migration-v1.0|legacy-import)
-      CLS="$($MODDIR/scripts/classify.sh "$PKG" 2>/dev/null)"
+    migrated-v1.0|migration-v1.0|legacy-import|classifier-fallback|classifier-error-*)
+      CLS="$(/system/bin/sh "$MODDIR/scripts/classify.sh" "$PKG" 2>>"$RUN/auto.log")"
+      RC=$?
       NEWP="${CLS%%|*}"
       NEWR="${CLS#*|}"
-      case "$NEWP" in game|chat|video|launcher|audio|balanced|power-save) ;; *) NEWP=balanced; NEWR=classifier-fallback ;; esac
+      case "$NEWP" in
+        game|chat|video|launcher|audio|balanced|power-save)
+          [ -n "$NEWR" ] || NEWR=classifier-no-reason
+          ;;
+        *)
+          NEWP=balanced
+          if [ "$RC" -ne 0 ]; then NEWR="classifier-error-$RC"; else NEWR=classifier-fallback; fi
+          ;;
+      esac
       NOW="$(date +%s 2>/dev/null)"
       printf '%s\t%s\t%s\t%s\n' "$PKG" "$NEWP" "$NEWR" "$NOW" >> "$TMP"
+      echo "bulk-reclassified: $PKG -> $NEWP ($NEWR)" >> "$RUN/auto.log"
       CHANGED=1
       ;;
     *)
