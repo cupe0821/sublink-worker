@@ -1,5 +1,5 @@
 import {exec,toast,getPackagesInfo} from './kernelsu.js';
-const MOD='/data/adb/modules/threadctl_rs_auto_webui';
+const MOD='/data/adb/modules/threadctl_rs_webui';
 const BB='/data/adb/ksu/bin/busybox';
 const profiles=['game','chat','video','launcher','audio','balanced','power-save'];
 let apps=[];let overrides=new Map();let labels=new Map();
