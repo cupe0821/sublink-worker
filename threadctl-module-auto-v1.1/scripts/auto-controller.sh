@@ -24,39 +24,50 @@ replace_auto_record() {
   ' "$AUTO" > "$AUTO.tmp" && mv -f "$AUTO.tmp" "$AUTO"
 }
 
+classify_pkg() {
+  P="$1"
+  CLS="$(/system/bin/sh "$MODDIR/scripts/classify.sh" "$P" 2>>"$RUN/auto.log")"
+  RC=$?
+  BASE="${CLS%%|*}"
+  REASON="${CLS#*|}"
+  case "$BASE" in
+    game|chat|video|launcher|audio|balanced|power-save)
+      [ -n "$REASON" ] || REASON=classifier-no-reason
+      ;;
+    *)
+      BASE=balanced
+      if [ "$RC" -ne 0 ]; then REASON="classifier-error-$RC"; else REASON=classifier-fallback; fi
+      ;;
+  esac
+}
+
 process_current() {
   PKG="$($MODDIR/scripts/detect-current.sh 2>/dev/null)"
   [ -n "$PKG" ] || return 1
 
-  # Skip obvious root/module managers: they do not need performance policy.
   case "$PKG" in
     me.weishu.kernelsu|com.topjohnwu.magisk|com.omarea.vtools) return 0 ;;
   esac
 
   EXIST="$(awk -F '\t' -v p="$PKG" '$1==p {print $0; exit}' "$AUTO" 2>/dev/null)"
   CHANGED=0
+  NEED_CLASSIFY=0
   if [ -z "$EXIST" ]; then
     NEED_CLASSIFY=1
   else
     BASE="$(printf '%s\n' "$EXIST" | cut -f2)"
     REASON="$(printf '%s\n' "$EXIST" | cut -f3)"
-    # v1.0 migration records were not true automatic classifications.
-    # Reclassify them when encountered so they cannot stay pinned to balanced forever.
     case "$REASON" in
-      migrated-v1.0|migration-v1.0|legacy-import) NEED_CLASSIFY=1 ;;
-      *) NEED_CLASSIFY=0 ;;
+      migrated-v1.0|migration-v1.0|legacy-import|classifier-fallback|classifier-error-*) NEED_CLASSIFY=1 ;;
     esac
   fi
 
   if [ "$NEED_CLASSIFY" = 1 ]; then
-    CLS="$($MODDIR/scripts/classify.sh "$PKG" 2>/dev/null)"
-    BASE="${CLS%%|*}"
-    REASON="${CLS#*|}"
-    case "$BASE" in game|chat|video|launcher|audio|balanced|power-save) ;; *) BASE=balanced; REASON=classifier-fallback ;; esac
+    classify_pkg "$PKG"
     NOW="$(date +%s 2>/dev/null)"
     replace_auto_record "$PKG" "$BASE" "$REASON" "$NOW"
     CHANGED=1
-    echo "auto-classified: $PKG -> $BASE ($REASON)"
+    echo "auto-classified: $PKG -> $BASE ($REASON)" >> "$RUN/auto.log"
   fi
 
   EFFECTIVE="$BASE"
