@@ -1,0 +1,4 @@
+Upstream: https://github.com/StarfallSeas/threadctl-rs
+Upstream commit: 60f223d156d630082a803a165ac9ac898f43f8b9
+Native source modifications: none
+v1.2 wrapper change: legacy migrated records reclassified + improved app heuristics
