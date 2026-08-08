@@ -1,10 +1,11 @@
 #!/system/bin/sh
 ui_print "*******************************"
-ui_print " ThreadCtl-rs Auto WebUI v1.1"
+ui_print " ThreadCtl-rs Auto WebUI v1.2"
 ui_print "*******************************"
 ui_print "- Original upstream Rust daemon"
 ui_print "- Automatic foreground-app discovery"
 ui_print "- Automatic profile classification"
+ui_print "- Legacy v1.0 records are reclassified"
 ui_print "- Optional per-app override + advanced KDL"
 
 case "$ARCH" in
@@ -15,7 +16,7 @@ esac
 mkdir -p "$MODPATH/config" "$MODPATH/run"
 OLD="/data/adb/modules/threadctl_rs_webui"
 
-# In-place upgrade migration from v1.0 (or an earlier v1.1 install).
+# In-place upgrade migration from v1.0/v1.1.
 # KernelSU normally installs into modules_update while the old module is still readable.
 if [ -d "$OLD/config" ] && [ "$OLD" != "$MODPATH" ]; then
   [ -s "$OLD/config/advanced.kdl" ] && cp -f "$OLD/config/advanced.kdl" "$MODPATH/config/advanced.kdl"
@@ -24,6 +25,8 @@ if [ -d "$OLD/config" ] && [ "$OLD" != "$MODPATH" ]; then
   [ -s "$OLD/config/auto-apps.tsv" ] && cp -f "$OLD/config/auto-apps.tsv" "$MODPATH/config/auto-apps.tsv"
 
   # v1.0 stored manually selected apps as: package<TAB>profile.
+  # These imports are intentionally marked migrated-v1.0; v1.2 will reclassify
+  # them at first boot unless a user override exists.
   if [ ! -s "$MODPATH/config/auto-apps.tsv" ] && [ -s "$OLD/config/apps.tsv" ]; then
     NOW="$(date +%s 2>/dev/null)"
     TAB="$(printf '\t')"
