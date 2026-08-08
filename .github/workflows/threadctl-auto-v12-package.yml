@@ -1,0 +1,69 @@
+name: Package ThreadCtl Auto v1.2
+
+on:
+  push:
+    branches:
+      - build-threadctl-auto-v1.2
+    paths-ignore:
+      - 'threadctl-release-auto-v1.2/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify original native daemon
+        run: |
+          set -eux
+          test -f threadctl-build-output/threadctl
+          echo '2ffe4dcf675ce7eeb4797349c6a3a63d3fd21b1b258c7ab68c558ee49dce3a89  threadctl-build-output/threadctl' | sha256sum -c -
+          file threadctl-build-output/threadctl | grep -Ei 'ELF 64-bit.*(ARM aarch64|ARM64|aarch64)'
+
+      - name: Assemble module
+        run: |
+          set -eux
+          rm -rf .stage-threadctl threadctl-release-auto-v1.2
+          mkdir -p .stage-threadctl threadctl-release-auto-v1.2
+          cp -a threadctl-module-auto-v1.1/. .stage-threadctl/
+          mkdir -p .stage-threadctl/bin
+          cp threadctl-build-output/threadctl .stage-threadctl/bin/threadctl
+          chmod 0755 .stage-threadctl/bin/threadctl .stage-threadctl/service.sh .stage-threadctl/action.sh .stage-threadctl/uninstall.sh
+          find .stage-threadctl/scripts -type f -name '*.sh' -exec chmod 0755 {} +
+          grep -q '^id=threadctl_rs_webui$' .stage-threadctl/module.prop
+          grep -q '^version=1.2.0$' .stage-threadctl/module.prop
+          for f in .stage-threadctl/*.sh .stage-threadctl/scripts/*.sh; do sh -n "$f"; done
+          node --check .stage-threadctl/webroot/app.js
+          node --check .stage-threadctl/webroot/kernelsu.js
+
+      - name: Create and verify ZIP
+        run: |
+          set -eux
+          (cd .stage-threadctl && zip -r -9 ../threadctl-release-auto-v1.2/ThreadCtl-rs-KernelSU-Auto-WebUI-v1.2.zip .)
+          unzip -t threadctl-release-auto-v1.2/ThreadCtl-rs-KernelSU-Auto-WebUI-v1.2.zip
+          unzip -p threadctl-release-auto-v1.2/ThreadCtl-rs-KernelSU-Auto-WebUI-v1.2.zip bin/threadctl > /tmp/threadctl-from-zip
+          echo '2ffe4dcf675ce7eeb4797349c6a3a63d3fd21b1b258c7ab68c558ee49dce3a89  /tmp/threadctl-from-zip' | sha256sum -c -
+          sha256sum threadctl-release-auto-v1.2/ThreadCtl-rs-KernelSU-Auto-WebUI-v1.2.zip > threadctl-release-auto-v1.2/ThreadCtl-rs-KernelSU-Auto-WebUI-v1.2.zip.sha256
+          sha256sum threadctl-build-output/threadctl > threadctl-release-auto-v1.2/native-threadctl.sha256
+          printf '%s\n' \
+            'Upstream: https://github.com/StarfallSeas/threadctl-rs' \
+            'Upstream commit: 60f223d156d630082a803a165ac9ac898f43f8b9' \
+            'Native source modifications: none' \
+            'v1.2 wrapper change: legacy migrated records reclassified + improved app heuristics' \
+            > threadctl-release-auto-v1.2/PROVENANCE.txt
+
+      - name: Publish package to branch
+        run: |
+          set -eux
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add threadctl-release-auto-v1.2
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'build: publish ThreadCtl Auto WebUI v1.2 package'
+          git push origin HEAD:build-threadctl-auto-v1.2
